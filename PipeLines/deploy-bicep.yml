@@ -1,0 +1,49 @@
+parameters:
+  - name: iacSubscription
+    displayName: iac Subscription
+    type: string
+    default: ''
+  - name: appName
+    displayName: appName
+    type: string
+    default: ''
+  - name: location
+    displayName: location
+    type: string
+    default: ''
+  - name: environmentName
+    displayName: environmentName
+    type: string
+    default: dev
+
+    
+
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: IaC
+    jobs:
+      - job: IAC_Bicep
+        steps:
+          - task: AzureCLI@2
+            displayName: Preview IaC Changes
+            inputs:
+              azureSubscription: ${{ parameters.iacSubscription }}
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az --version     
+                az deployment sub what-if --name IacTemplateDeployment --location ${{ parameters.location }} --template-file main.bicep --parameters main.bicepparam       
+          - task: AzureCLI@2
+            name: IaCOutput
+            inputs:
+              azureSubscription: ${{ parameters.iacSubscription }}
+              scriptType: pscore
+              scriptLocation: inlineScript
+              useGlobalConfig: false
+              inlineScript: |     
+                $resultString = az deployment sub create --name IacTemplateDeployment --location ${{ parameters.location }} --template-file main.bicep --parameters main.bicepparam
+                $ResultObject = $resultString | ConvertFrom-Json
